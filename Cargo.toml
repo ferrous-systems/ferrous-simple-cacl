@@ -3,5 +3,8 @@ name = "ferrous-simple-calc"
 version = "0.1.0"
 authors = ["Aleksey Kladov <aleksey.kladov@gmail.com>"]
 edition = "2018"
+description = "Example crate: simple calculator"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ferrous-systems/ferrous-simple-calc"
 
 [dependencies]
