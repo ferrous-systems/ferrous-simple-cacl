@@ -7,8 +7,18 @@ description = "Example crate: simple calculator"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ferrous-systems/ferrous-simple-calc"
 
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [features]
 default = []
 std = []
+provide-panic = []
 
 [dependencies]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
