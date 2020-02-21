@@ -1,9 +1,11 @@
 // extern crate core;
 // use core::prelude::*;
 
-#![no_std]
+// #![no_std]
 
 use core::fmt;
+
+use std::io;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Expression {
@@ -30,6 +32,14 @@ pub enum CalcError {
     ArithError,
 }
 
+impl std::error::Error for CalcError {}
+
+impl From<ParseIntError> for CalcError {
+    fn from(_: ParseIntError) -> Self {
+        unimplemented!()
+    }
+}
+
 impl fmt::Display for CalcError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -43,13 +53,24 @@ impl fmt::Display for CalcError {
 #[cfg(feature = "std")]
 impl std::error::Error for CalcError {}
 
+fn failable() -> Result<i64, AError> {
+    Ok(92)
+}
+
+fn modify(x: i64) -> Result<i64, BError> {
+    Ok(x * 2)
+}
+
+fn foo() -> Result<i64, MetaError> {
+    let x = failable()?;
+    let res = modify(x)?;
+    Ok((x + 1))
+}
+
 /// Parse input into an `Expression`.
-pub fn parse(input: &str) -> Result<Expression, CalcError> {
+pub fn parse(input: &str) -> Result<Expression, Box<dyn std::error::Error>> {
     let mut tokens = input.split_ascii_whitespace();
-    let first = match tokens.next() {
-        Some(it) => it,
-        None => return Err(CalcError::Eof),
-    };
+    let first = tokens.next().ok_or(CalcError::Eof)?;
 
     let bin_op = match first {
         "+" => BinOp::Add,
@@ -57,36 +78,21 @@ pub fn parse(input: &str) -> Result<Expression, CalcError> {
         "*" => BinOp::Mul,
         "/" => BinOp::Div,
         "sqr" => {
-            let arg = match tokens.next() {
-                None => return Err(CalcError::Eof),
-                Some(token) => match token.parse::<i64>() {
-                    Ok(n) => n,
-                    Err(_) => return Err(CalcError::BadToken),
-                },
-            };
+            let arg = tokens.next().ok_or(CalcError::Eof)?;
+            let arg = arg.parse::<i64>()?;
             return Ok(Expression::Sqr(arg));
         }
         _ => {
-            return match first.parse::<i64>() {
-                Ok(n) => Ok(Expression::Number(n)),
-                Err(_) => Err(CalcError::BadToken),
-            }
+            let arg = tokens.next().ok_or(CalcError::Eof)?;
+            let arg = arg.parse::<i64>()?;
+            return Ok(Expression::Number(arg));
         }
     };
-    let lhs = match tokens.next() {
-        None => return Err(CalcError::Eof),
-        Some(token) => match token.parse::<i64>() {
-            Ok(n) => n,
-            Err(_) => return Err(CalcError::BadToken),
-        },
-    };
-    let rhs = match tokens.next() {
-        None => return Err(CalcError::Eof),
-        Some(token) => match token.parse::<i64>() {
-            Ok(n) => n,
-            Err(_) => return Err(CalcError::BadToken),
-        },
-    };
+    let lhs = tokens.next().ok_or(CalcError::Eof)?;
+    let lhs = lhs.parse::<i64>()?;
+
+    let rhs = tokens.next().ok_or(CalcError::Eof)?;
+    let rhs = rhs.parse::<i64>()?;
 
     Ok(Expression::BinExpression { bin_op, lhs, rhs })
 }
@@ -127,7 +133,9 @@ fn test() {
     );
 }
 
+use core::num::ParseIntError;
 use core::panic::PanicInfo;
+
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {
