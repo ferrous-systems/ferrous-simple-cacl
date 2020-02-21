@@ -1,4 +1,9 @@
-use std::fmt;
+// extern crate core;
+// use core::prelude::*;
+
+#![no_std]
+
+use core::fmt;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Expression {
@@ -35,13 +40,14 @@ impl fmt::Display for CalcError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for CalcError {}
 
 /// Parse input into an `Expression`.
 pub fn parse(input: &str) -> Result<Expression, CalcError> {
-    let tokens = input.split_ascii_whitespace().collect::<Vec<&str>>();
-    let first = match tokens.get(0) {
-        Some(it) => *it,
+    let mut tokens = input.split_ascii_whitespace();
+    let first = match tokens.next() {
+        Some(it) => it,
         None => return Err(CalcError::Eof),
     };
 
@@ -51,7 +57,7 @@ pub fn parse(input: &str) -> Result<Expression, CalcError> {
         "*" => BinOp::Mul,
         "/" => BinOp::Div,
         "sqr" => {
-            let arg = match tokens.get(1) {
+            let arg = match tokens.next() {
                 None => return Err(CalcError::Eof),
                 Some(token) => match token.parse::<i64>() {
                     Ok(n) => n,
@@ -67,14 +73,14 @@ pub fn parse(input: &str) -> Result<Expression, CalcError> {
             }
         }
     };
-    let lhs = match tokens.get(1) {
+    let lhs = match tokens.next() {
         None => return Err(CalcError::Eof),
         Some(token) => match token.parse::<i64>() {
             Ok(n) => n,
             Err(_) => return Err(CalcError::BadToken),
         },
     };
-    let rhs = match tokens.get(2) {
+    let rhs = match tokens.next() {
         None => return Err(CalcError::Eof),
         Some(token) => match token.parse::<i64>() {
             Ok(n) => n,
